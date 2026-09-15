@@ -1,0 +1,33 @@
+# Org-wide policy check: every repository must define a CODEOWNERS file.
+# This workflow is referenced by the organization ruleset "Require CODEOWNERS"
+# (a `workflows` rule), so it runs against pull requests in every targeted
+# repository rather than only in this one. Keeping it here means the check
+# itself cannot drift per-repository.
+name: require-codeowners
+
+on:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  require-codeowners:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # GitHub resolves CODEOWNERS from .github/, the repository root, or docs/,
+      # so accept any of the three. -s rather than -f so that an empty
+      # placeholder file does not satisfy the policy.
+      - name: Assert a CODEOWNERS file exists
+        run: |
+          for path in .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS; do
+            if [ -s "$path" ]; then
+              echo "Found $path"
+              exit 0
+            fi
+          done
+          echo "::error::No CODEOWNERS file found in .github/, the repository root, or docs/. See https://docs.github.com/articles/about-code-owners"
+          exit 1
